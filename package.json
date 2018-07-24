@@ -1,0 +1,30 @@
+{
+  "name": "pong",
+  "version": "1.0.0",
+  "description": "ping pong",
+  "main": "server.js",
+  "scripts": {
+    "test": "test",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "-"
+  },
+  "author": "emkate",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.16.3",
+    "gulp-sass": "^4.0.1",
+    "rxjs": "^6.2.2",
+    "rxjs-compat": "^6.2.2",
+    "socket.io": "^2.1.1",
+    "socket.io-client": "^2.1.1"
+  },
+  "devDependencies": {
+    "babel-core": "^6.26.3",
+    "babel-preset-env": "^1.7.0",
+    "gulp": "^3.9.1",
+    "gulp-babel": "^7.0.1"
+  }
+}
