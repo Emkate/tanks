@@ -17,8 +17,6 @@ var imageBlue = new Image(60, 60);
 imageBlue.src = '/public/tank_blue_sprite.png';
 
 var updatePlayerPos = function updatePlayerPos(user) {
-  console.log(user);
-
   var img = '';
   switch (user.color) {
     case 'green':
@@ -86,6 +84,17 @@ socket.on('updateCanvas', function (objectsArray) {
 
 socket.on('emitPrompt', function (data) {
   window.alert(data.msg);
+});
+
+socket.on('updateScore', function (scoreboard) {
+  document.getElementById('leaderboardList').innerHTML = "";
+
+  scoreboard.forEach(function (el) {
+    var listElement = document.createElement('div');
+    listElement.classList.add('leaderboard-list__item');
+    listElement.innerHTML = '<span class="' + el.color + '">' + el.color + '</span>: ' + el.score;
+    document.getElementById('leaderboardList').appendChild(listElement);
+  });
 });
 
 window.onbeforeunload = function (e) {

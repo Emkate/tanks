@@ -16,8 +16,6 @@ imageBlue.src = '/public/tank_blue_sprite.png';
 
 
 var updatePlayerPos = (user) => {
-  console.log(user);
-  
   let img = '';
   switch (user.color) {
     case 'green':
@@ -85,6 +83,17 @@ socket.on('updateCanvas', (objectsArray) => {
 
 socket.on('emitPrompt', (data) => {
   window.alert(data.msg);
+})
+
+socket.on('updateScore', (scoreboard) => {
+  document.getElementById('leaderboardList').innerHTML = "";
+
+  scoreboard.forEach((el) => {
+    let listElement = document.createElement('div');
+    listElement.classList.add('leaderboard-list__item');
+    listElement.innerHTML = '<span class="'+ el.color +'">' + el.color + '</span>: ' + el.score;
+    document.getElementById('leaderboardList').appendChild(listElement);
+  })
 })
 
 window.onbeforeunload = (e) => {

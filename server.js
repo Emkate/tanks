@@ -128,6 +128,9 @@ var moveDown = function (userId) {
 }
 
 var checkPlayerColision = function (player, direction) {
+  if(!player) {
+    return;
+  }
   var otherPlayers = usersList.filter(usr => usr.id !== player.id);
 
   if (otherPlayers.length) {
@@ -136,52 +139,58 @@ var checkPlayerColision = function (player, direction) {
 
 
     for (var i = 0; i < otherPlayers.length; i++) {
-      let dx = player.pos[0] - otherPlayers[i].pos[0];
-      let dy = player.pos[1] - otherPlayers[i].pos[1];
-
-      switch (direction) {
-        case 'LEFT':
-          dx -= 3;
-          break;
-        case 'UP':
-          dy -= 3;
-          break;
-        case 'RIGHT':
-          dx += 3;
-          break;
-        case 'DOWN':
-          dy += 3;
-          break;
-        default:
-          break;
-      }
-
-      if (Math.abs(dx) <= w - 3 && Math.abs(dy) <= h - 3) {
-        /* collision! */
-        const wy = w * dy;
-        const hx = h * dx;
-
-        if (wy > hx) {
-          if (wy > -hx && Math.abs(wy) !== Math.abs(hx)) {
-            /* collision at the top */
-            return true;
-          }
-          if (wy < -hx && Math.abs(wy) !== Math.abs(hx)) {
-            /* on the right */
-            return true;
-          }
-        } else {
-          if (wy > -hx && Math.abs(wy) !== Math.abs(hx)) {
-            /* on the left */
-            return true;
-          }
-          if (wy < -hx && Math.abs(wy) !== Math.abs(hx)) {
-            /* at the bottom */
-            return true;
+      if(otherPlayers[i] && otherPlayers[i].pos) {
+        let dx = player.pos[0] - otherPlayers[i].pos[0];
+        let dy = player.pos[1] - otherPlayers[i].pos[1];
+  
+        switch (direction) {
+          case 'LEFT':
+            dx -= 3;
+            break;
+          case 'UP':
+            dy -= 3;
+            break;
+          case 'RIGHT':
+            dx += 3;
+            break;
+          case 'DOWN':
+            dy += 3;
+            break;
+          default:
+            break;
+        }
+  
+        if (Math.abs(dx) <= w - 3 && Math.abs(dy) <= h - 3) {
+          /* collision! */
+          const wy = w * dy;
+          const hx = h * dx;
+  
+          if (wy > hx) {
+            if (wy > -hx && Math.abs(wy) !== Math.abs(hx)) {
+              /* collision at the top */
+              return true;
+            }
+            if (wy < -hx && Math.abs(wy) !== Math.abs(hx)) {
+              /* on the right */
+              return true;
+            }
+          } else {
+            if (wy > -hx && Math.abs(wy) !== Math.abs(hx)) {
+              /* on the left */
+              return true;
+            }
+            if (wy < -hx && Math.abs(wy) !== Math.abs(hx)) {
+              /* at the bottom */
+              return true;
+            }
           }
         }
       }
+      
+      
     }
+  } else {
+    return false;
   }
 }
 
@@ -237,6 +246,8 @@ var setBulletsInterval = function () {
 
   if (!bulletsInterval) {
     bulletsInterval = setInterval(() => {
+      // console.log(bulletsList);
+      
       bulletsList.map(bullet => {
         switch (bullet.direction) {
           case 'LEFT':
@@ -254,13 +265,88 @@ var setBulletsInterval = function () {
           default:
             break;
         }
+        if(bullet) {
+          let whoWasHit = checkBulletCollision(bullet);
+
+          if (whoWasHit) {
+            bullet.destroyed = 1;
+
+            usersList.map(user => {
+              if(user.id === bullet.playerId) {
+                user.score += 1;
+              }
+            });
+
+            updateScores();
+          }
+
+        }
       })
 
       bulletsList = bulletsList.filter(bullet => {
-        return bullet.pos[0] < CANVAS_WIDTH && bullet.pos[0] > 0 && bullet.pos[1] < CANVAS_HEIGHT || bullet.pos[1] > 0;
+        return (bullet.pos[0] < CANVAS_WIDTH && bullet.pos[0] > 0 && bullet.pos[1] < CANVAS_HEIGHT && bullet.pos[1] > 0) && !bullet.destroyed;
       });
     }, 20);
   }
+}
+
+var checkBulletCollision = function (bullet) {
+  var otherPlayers = usersList;
+
+  if (otherPlayers.length) {
+    const w = BULLET_SIZE;
+    const h = BULLET_SIZE;
+
+
+    for (var i = 0; i < otherPlayers.length; i++) {
+      let dx = bullet.pos[0] - otherPlayers[i].pos[0];
+      let dy = bullet.pos[1] - otherPlayers[i].pos[1];
+
+      if (Math.abs(dx) <= w + 22 && Math.abs(dy) <= h + 22) {
+        /* collision! */
+        const wy = w * dy;
+        const hx = h * dx;
+
+        if (wy > hx) {
+          
+          if (wy > -hx && Math.abs(wy) !== Math.abs(hx)) {
+            /* collision at the top */
+            return otherPlayers[i];
+          }
+          if (wy < -hx && Math.abs(wy) !== Math.abs(hx)) {
+            /* on the right */
+            return otherPlayers[i];
+          }
+        } else {
+          if (wy > -hx && Math.abs(wy) !== Math.abs(hx)) {
+            /* on the left */
+            return otherPlayers[i];
+          }
+          if (wy < -hx && Math.abs(wy) !== Math.abs(hx)) {
+            /* at the bottom */
+            return otherPlayers[i];
+          }
+        }
+      }
+    }
+  }
+}
+
+var updateScores = function () {
+  var scoresBoard = usersList.map(user => {
+    return {
+      'color' : user.color,
+      'score' : user.score
+    }
+  }).sort((a, b) => {
+    if (a.score > b.score) {
+      return -1;
+    } else {
+      return 1;
+    }
+  })
+
+  io.emit('updateScore', scoresBoard);
 }
 
 
@@ -270,6 +356,7 @@ io.sockets.on('connection', function (socket) {
 
   if (usersList.length < 4) {
     addAPlayer(socket);
+    updateScores();
   } else {
 
   }
@@ -330,6 +417,8 @@ io.sockets.on('connection', function (socket) {
     usersList = usersList.filter((user) => {
       return user.id !== data.id;
     });
+
+    updateScores();
 
     if (usersList.length === 0) {
       clearInterval(interval);
