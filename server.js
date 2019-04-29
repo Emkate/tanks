@@ -22,7 +22,7 @@ app.use('/public', express.static(__dirname + '/public'));
 var usersList = [];
 var interval = 0;
 var bulletsInterval = 0;
-var availableColors = ['green', 'red', 'blue', 'yellow'];
+var availableColors = ['green', 'red', 'blue', 'yellow', 'orange', 'cyan', 'pink', 'gray'];
 
 var findPlayerA = function () {
   return usersList.find(usr => usr.player === 'A');
@@ -354,18 +354,16 @@ var updateScores = function () {
 
 io.sockets.on('connection', function (socket) {
 
-  if (usersList.length < 4) {
+  if (usersList.length < availableColors.length) {
     addAPlayer(socket);
     updateScores();
-  } else {
-
   }
 
   const userFound = usersList.find(usr => usr.id === socket.id);
 
   if (!userFound) {
     socket.emit('emitPrompt', {
-      msg: 'Proszę stąd wykurwiać, jest już czterech graczy.'
+      msg: 'Proszę stąd wykurwiać, jest już ośmiu graczy.'
     })
   }
 

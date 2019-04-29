@@ -2,6 +2,9 @@
 
 var socket = io();
 
+var keyState = {};
+var keyStateValue = null;
+
 var canvas = document.getElementById('canvas');
 var context = canvas.getContext('2d');
 
@@ -15,6 +18,14 @@ var imageYellow = new Image(60, 60);
 imageYellow.src = '/public/tank_yellow_sprite.png';
 var imageBlue = new Image(60, 60);
 imageBlue.src = '/public/tank_blue_sprite.png';
+var imageOrange = new Image(60, 60);
+imageOrange.src = '/public/tank_orange_sprite.png';
+var imageCyan = new Image(60, 60);
+imageCyan.src = '/public/tank_cyan_sprite.png';
+var imagePink = new Image(60, 60);
+imagePink.src = '/public/tank_pink_sprite.png';
+var imageGray = new Image(60, 60);
+imageGray.src = '/public/tank_gray_sprite.png';
 
 var updatePlayerPos = function updatePlayerPos(user) {
   var img = '';
@@ -30,6 +41,18 @@ var updatePlayerPos = function updatePlayerPos(user) {
       break;
     case 'blue':
       img = imageBlue;
+      break;
+    case 'orange':
+      img = imageOrange;
+      break;
+    case 'cyan':
+      img = imageCyan;
+      break;
+    case 'pink':
+      img = imagePink
+      break;
+    case 'gray':
+      img = imageGray;
       break;
     default:
       break;
@@ -104,18 +127,36 @@ window.onbeforeunload = function (e) {
 };
 
 document.addEventListener('keydown', function (event) {
-  if (socketId) {
-    if ([37, 38, 39, 40].indexOf(event.which) > -1) {
-      socket.emit('moveUser', {
-        id: socketId,
-        direction: event.which
-      });
-    }
-
-    if (event.which === 32) {
-      socket.emit('shoot', {
-        id: socketId
-      });
-    }
+  if (socketId && [32, 37, 38, 39, 40].indexOf(event.which) > -1) {
+    keyState[event.which] = true;
+    keyStateValue = event.keyCode || event.which;
   }
 });
+
+document.addEventListener('keyup', function (event) {
+  if (socketId && [32, 37, 38, 39, 40].indexOf(event.which) > -1) {
+    keyState[event.which] = false;
+    keyStateValue = null;
+  }
+});
+
+var gameLoop = function() {
+  if (keyState[37] || keyState[38] || keyState[39] || keyState[40]) {
+    socket.emit('moveUser', {
+      id: socketId,
+      direction: keyStateValue
+    });
+  }
+
+  if (keyState[32]) {
+    socket.emit('shoot', {
+      id: socketId
+    });
+  }
+
+  setTimeout(function() {
+    gameLoop();
+  }, 10)
+}
+
+gameLoop();
