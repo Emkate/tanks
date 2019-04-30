@@ -78,7 +78,7 @@ var findNextPlayerPosition = function (playerId) {
 
 
 
-var addAPlayer = function (socket) {
+var addAPlayer = function (socket, name) {
   var playerColor = findNextPlayerColor();
 
   const user = {
@@ -87,7 +87,8 @@ var addAPlayer = function (socket) {
     'pos': findNextPlayerPosition(socket.id),
     'size': PLAYER_SIZE,
     'color': playerColor,
-    'direction': 'UP'
+    'direction': 'UP',
+    'name': name
   };
   usersList.push(user);
 
@@ -97,7 +98,7 @@ var addAPlayer = function (socket) {
 
 var moveLeft = function (userId) {
   const user = usersList.find(usr => usr.id === userId);
-  if ((user.pos[0] - PLAYER_SIZE / 2 > 0) && !checkPlayerColision(user, 'LEFT')) {
+  if (user && user.pos && (user.pos[0] - PLAYER_SIZE / 2 > 0) && !checkPlayerColision(user, 'LEFT')) {
     user.direction = 'LEFT';
     user.pos[0] -= MOVE_PIXEL
   }
@@ -105,7 +106,7 @@ var moveLeft = function (userId) {
 
 var moveUp = function (userId) {
   const user = usersList.find(usr => usr.id === userId);
-  if (((user.pos[1] - PLAYER_SIZE / 2) > 0) && !checkPlayerColision(user, 'UP')) {
+  if (user && user.pos && ((user.pos[1] - PLAYER_SIZE / 2) > 0) && !checkPlayerColision(user, 'UP')) {
     user.direction = 'UP';
     user.pos[1] -= MOVE_PIXEL
   }
@@ -113,7 +114,7 @@ var moveUp = function (userId) {
 
 var moveRight = function (userId) {
   const user = usersList.find(usr => usr.id === userId);
-  if ((user.pos[0] + PLAYER_SIZE / 2 < CANVAS_WIDTH) && !checkPlayerColision(user, 'RIGHT')) {
+  if (user && user.pos && (user.pos[0] + PLAYER_SIZE / 2 < CANVAS_WIDTH) && !checkPlayerColision(user, 'RIGHT')) {
     user.direction = 'RIGHT';
     user.pos[0] += MOVE_PIXEL
   }
@@ -121,7 +122,7 @@ var moveRight = function (userId) {
 
 var moveDown = function (userId) {
   const user = usersList.find(usr => usr.id === userId);
-  if ((user.pos[1] + PLAYER_SIZE / 2 < CANVAS_HEIGHT) && !checkPlayerColision(user, 'DOWN')) {
+  if (user && user.pos && (user.pos[1] + PLAYER_SIZE / 2 < CANVAS_HEIGHT) && !checkPlayerColision(user, 'DOWN')) {
     user.direction = 'DOWN';
     user.pos[1] += MOVE_PIXEL
   }
@@ -199,17 +200,20 @@ var bulletsList = [];
 var makeBullet = function (playerId) {
   const user = usersList.find((user) => {
     return user.id === playerId;
-  })
+  });
 
-  const bullet = {
-    'playerId': user.id,
-    'pos': getBulletPos(user),
-    'size': BULLET_SIZE,
-    'direction': user.direction
-  };
-  bulletsList.push(bullet);
-
-  setBulletsInterval();
+  if (user) {
+    const bullet = {
+      'playerId': user.id,
+      'pos': getBulletPos(user),
+      'size': BULLET_SIZE,
+      'direction': user.direction
+    };
+    bulletsList.push(bullet);
+    io.emit('pewSound');
+  
+    setBulletsInterval();
+  }
 }
 
 var getBulletPos = function (user) {
@@ -297,34 +301,35 @@ var checkBulletCollision = function (bullet) {
     const w = BULLET_SIZE;
     const h = BULLET_SIZE;
 
-
     for (var i = 0; i < otherPlayers.length; i++) {
-      let dx = bullet.pos[0] - otherPlayers[i].pos[0];
-      let dy = bullet.pos[1] - otherPlayers[i].pos[1];
+      if ((otherPlayers[i] && otherPlayers[i].pos) && (bullet && bullet.pos)) {
+        let dx = bullet.pos[0] - otherPlayers[i].pos[0];
+        let dy = bullet.pos[1] - otherPlayers[i].pos[1];
 
-      if (Math.abs(dx) <= w + 22 && Math.abs(dy) <= h + 22) {
-        /* collision! */
-        const wy = w * dy;
-        const hx = h * dx;
-
-        if (wy > hx) {
-          
-          if (wy > -hx && Math.abs(wy) !== Math.abs(hx)) {
-            /* collision at the top */
-            return otherPlayers[i];
-          }
-          if (wy < -hx && Math.abs(wy) !== Math.abs(hx)) {
-            /* on the right */
-            return otherPlayers[i];
-          }
-        } else {
-          if (wy > -hx && Math.abs(wy) !== Math.abs(hx)) {
-            /* on the left */
-            return otherPlayers[i];
-          }
-          if (wy < -hx && Math.abs(wy) !== Math.abs(hx)) {
-            /* at the bottom */
-            return otherPlayers[i];
+        if (Math.abs(dx) <= w + 22 && Math.abs(dy) <= h + 22) {
+          /* collision! */
+          const wy = w * dy;
+          const hx = h * dx;
+  
+          if (wy > hx) {
+            
+            if (wy > -hx && Math.abs(wy) !== Math.abs(hx)) {
+              /* collision at the top */
+              return otherPlayers[i];
+            }
+            if (wy < -hx && Math.abs(wy) !== Math.abs(hx)) {
+              /* on the right */
+              return otherPlayers[i];
+            }
+          } else {
+            if (wy > -hx && Math.abs(wy) !== Math.abs(hx)) {
+              /* on the left */
+              return otherPlayers[i];
+            }
+            if (wy < -hx && Math.abs(wy) !== Math.abs(hx)) {
+              /* at the bottom */
+              return otherPlayers[i];
+            }
           }
         }
       }
@@ -336,7 +341,8 @@ var updateScores = function () {
   var scoresBoard = usersList.map(user => {
     return {
       'color' : user.color,
-      'score' : user.score
+      'score' : user.score,
+      'name' : user.name
     }
   }).sort((a, b) => {
     if (a.score > b.score) {
@@ -353,19 +359,17 @@ var updateScores = function () {
 /* socket.io part */
 
 io.sockets.on('connection', function (socket) {
-
   if (usersList.length < availableColors.length) {
-    addAPlayer(socket);
-    updateScores();
+    socket.emit('nickNeeded');
   }
 
-  const userFound = usersList.find(usr => usr.id === socket.id);
+  // const userFound = usersList.find(usr => usr.id === socket.id);
 
-  if (!userFound) {
-    socket.emit('emitPrompt', {
-      msg: 'Proszę stąd wykurwiać, jest już ośmiu graczy.'
-    })
-  }
+  // if (!userFound) {
+  //   socket.emit('emitPrompt', {
+  //     msg: 'Proszę stąd wykurwiać, jest już ośmiu graczy.'
+  //   })
+  // }
 
   Rx.Observable.fromEvent(socket, 'moveUser')
     .pipe(
@@ -421,6 +425,13 @@ io.sockets.on('connection', function (socket) {
     if (usersList.length === 0) {
       clearInterval(interval);
       interval = 0;
+    }
+  });
+
+  socket.on('nickGive', (data) => {
+    if (usersList.length < availableColors.length) {
+      addAPlayer(socket, data);
+      updateScores();
     }
   })
 

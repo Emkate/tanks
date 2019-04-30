@@ -10,6 +10,16 @@ var context = canvas.getContext('2d');
 
 var socketId = '';
 
+var pewSound = new Audio('/public/pew.mp3');
+
+var soundSwitch = document.getElementById('sound-switch');
+var isSoundOn = true;
+
+soundSwitch.addEventListener('click', function() {
+  isSoundOn = !isSoundOn;
+  isSoundOn ? soundSwitch.classList.add('options-item__switch--on') : soundSwitch.classList.remove('options-item__switch--on');
+});
+
 var imageGreen = new Image(60, 60);
 imageGreen.src = '/public/tank_green_sprite.png';
 var imageRed = new Image(60, 60);
@@ -75,7 +85,9 @@ var updatePlayerPos = function updatePlayerPos(user) {
     default:
       break;
   }
-  context.drawImage(img, shift, 0, 60, 60, user.pos[0] - user.size / 2, user.pos[1] - user.size / 2, 60, 60);
+  if (user.size && user.pos) {
+    context.drawImage(img, shift, 0, 60, 60, user.pos[0] - user.size / 2, user.pos[1] - user.size / 2, 60, 60);
+  }
 };
 
 var updateBulletPos = function updateBulletPos(bullet) {
@@ -115,9 +127,27 @@ socket.on('updateScore', function (scoreboard) {
   scoreboard.forEach(function (el) {
     var listElement = document.createElement('div');
     listElement.classList.add('leaderboard-list__item');
-    listElement.innerHTML = '<span class="' + el.color + '">' + el.color + '</span>: ' + el.score;
+    listElement.innerHTML = '<span class="' + el.color + '">' + el.name + '</span>: ' + el.score;
     document.getElementById('leaderboardList').appendChild(listElement);
   });
+});
+
+socket.on('nickNeeded', function () {
+  var nickPrompt = prompt("Podaj swój nick");
+  if (nickPrompt) {
+    socket.emit('nickGive', nickPrompt);
+  }
+});
+
+var playPewSound = function () {
+  if (isSoundOn) {
+    pewSound.play();
+  }
+};
+
+socket.on('pewSound', function() {
+  console.log(isSoundOn);
+  playPewSound();
 });
 
 window.onbeforeunload = function (e) {
@@ -126,19 +156,19 @@ window.onbeforeunload = function (e) {
   });
 };
 
-document.addEventListener('keydown', function (event) {
+window.onkeydown = function(event) {
   if (socketId && [32, 37, 38, 39, 40].indexOf(event.which) > -1) {
     keyState[event.which] = true;
     keyStateValue = event.keyCode || event.which;
   }
-});
+}
 
-document.addEventListener('keyup', function (event) {
+window.onkeyup = function(event) {
   if (socketId && [32, 37, 38, 39, 40].indexOf(event.which) > -1) {
     keyState[event.which] = false;
     keyStateValue = null;
   }
-});
+}
 
 var gameLoop = function() {
   if (keyState[37] || keyState[38] || keyState[39] || keyState[40]) {
@@ -158,6 +188,5 @@ var gameLoop = function() {
     gameLoop();
   }, 10)
 }
-
 
 gameLoop();

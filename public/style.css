@@ -39,7 +39,68 @@ canvas {
 .leaderboard-list__item {
   text-transform: uppercase;
   font-size: 24px;
+  white-space: nowrap;
+  display: flex;
 }
+
+.leaderboard-list__item span {
+  white-space: nowrap;
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+
+.options {
+  display: flex;
+  width: 220px;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: flex-start;
+  height: 680px;
+}
+
+.options-title {
+  padding-bottom: 10px;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.options-item {
+  width: 100%;
+}
+
+.options-item__switch {
+  position: relative;
+  width: 100px;
+  height: 38px;
+  border-radius: 40px;
+  border: 2px #000 solid;
+  background-color: transparent;
+  transition: .2s;
+  cursor: pointer;
+}
+
+.options-item__switch::after {
+  position: absolute;
+  content: '';
+  width: 34px;
+  height: 34px;
+  background-color: #333;
+  left: 2px;
+  top: 2px;
+  border-radius: 50%;
+  transition: .2s;
+}
+
+.options-item__switch--on {
+  background-color: #adffbc;
+}
+
+.options-item__switch--on::after {
+  left: calc(100% - 36px);
+}
+
 
 .green {
   color: green;
